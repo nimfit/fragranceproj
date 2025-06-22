@@ -7,9 +7,11 @@ from bs4 import BeautifulSoup
 
 
 class Fragrance:
-    def __init__(self, name, brand, accords=None, notes=None, rating=None, source='Fragrantica'):
+    def __init__(self, name, brand, gender, accords=None, notes=None, rating=None, source='Fragrantica'):
         self.name = name
         self.brand = brand
+        self.gender = gender
+        self.is_disc = False
         self.accords = accords if accords else []
         self.notes = notes if notes else {"head": [], "heart": [], "base": []}
         self.source = source
@@ -39,12 +41,13 @@ class Fragrance:
         return {
             "name": self.name,
             "brand": self.brand,
+            "gender": self.gender,
             "accords": self.accords,
             "notes": self.notes,
             "rating": self.rating,
             "score": self.score,
-            "source": self.source
-
+            "source": self.source,
+            "is_disc": self.is_disc
         }
     
 #Define the scraper function that tries to get data from fragrantica.com
@@ -60,6 +63,21 @@ def fragrantica_scrape(url):
     # Extract brand
     brand_tag = soup.find('span', class_='vote-button-name')
     brand = brand_tag.text.strip() if brand_tag else "Unknown"
+
+    # Extract gender
+    gender_string = "Unknown"
+    #card_link = soup.find('a', title=lambda t: t and "Perfume Card" in t)
+    #if card_link:
+    #    title = card_link.get['title'].lower()
+
+    #    if "for men and women" in title or "for women and men" in title:
+     #       gender_string = "Unisex"
+     #   elif "for men" in title:
+     #       gender_string = "Mens"
+     #   elif "for women" in title:
+     #       gender_string = "Womens"
+
+
 
     # Extract accords
     accord_divs = soup.find_all("div", class_="accord-bar")
@@ -81,6 +99,12 @@ def fragrantica_scrape(url):
         "heart": [],
         "base": []
     }
+
+    #Extract if its discontinued 
+
+
+
+
 
     # Extract rating
     rating_tag = soup.find("span", itemprop="ratingValue")
@@ -129,7 +153,7 @@ def fragrantica_scrape(url):
             notes["base"] = split_notes(match_base.group(1))
 
     # Create and return the Fragrance object
-    return Fragrance(name=name, brand=brand, accords=accords, notes=notes, rating=rating, source="Fragrantica")
+    return Fragrance(name=name, brand=brand, gender=gender_string, accords=accords, notes=notes, rating=rating, source="Fragrantica")
 
 
 
