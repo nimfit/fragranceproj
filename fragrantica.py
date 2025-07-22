@@ -3,21 +3,20 @@ import requests
 from bs4 import BeautifulSoup
 
 class Fragrance:
-    def __init__(self, name, brand, gender, accords=None, notes=None, rating=None, source='Fragrantica'):
+    def __init__(self, name, brand, accords=None, notes=None, rating=None, source='Fragrantica'):
         self.name = name
         self.brand = brand
-        self.gender = gender
-        self.is_disc = False
         self.accords = accords if accords else []
         self.notes = notes if notes else {"head": [], "heart": [], "base": []}
         self.source = source
         self.score = 0
         self.rating = rating
 
+    score = 0
     def set_score(self, user_likes):
         # Simple scoring logic — you can upgrade later
         score = 0
-        if self.source == 'Fragrantica' or self.source == 'Basenotes':
+        if self.source == 'Fragrantica':
             for note in self.notes.get('head', []):
                 if note in user_likes:
                     score += 1
@@ -37,13 +36,11 @@ class Fragrance:
         return {
             "name": self.name,
             "brand": self.brand,
-            "gender": self.gender,
             "accords": self.accords,
             "notes": self.notes,
             "rating": self.rating,
             "score": self.score,
-            "source": self.source,
-            "is_disc": self.is_disc
+            "source": self.source
         }
     
 #Define the scraper function that tries to get data from fragrantica.com
@@ -60,20 +57,7 @@ def fragrantica_scrape(url):
     brand_tag = soup.find('span', class_='vote-button-name')
     brand = brand_tag.text.strip() if brand_tag else "Unknown"
 
-    # Extract gender
-    gender_string = "Unknown"
-    #card_link = soup.find('a', title=lambda t: t and "Perfume Card" in t)
-    #if card_link:
-    #    title = card_link.get['title'].lower()
-
-    #    if "for men and women" in title or "for women and men" in title:
-     #       gender_string = "Unisex"
-     #   elif "for men" in title:
-     #       gender_string = "Mens"
-     #   elif "for women" in title:
-     #       gender_string = "Womens"
-
-
+   
 
     # Extract accords
     accord_divs = soup.find_all("div", class_="accord-bar")
@@ -96,12 +80,6 @@ def fragrantica_scrape(url):
         "base": []
     }
 
-    #Extract if its discontinued 
-
-
-
-
-
     # Extract rating
     rating_tag = soup.find("span", itemprop="ratingValue")
     rating = float(rating_tag.text.strip()) if rating_tag else None
@@ -109,22 +87,29 @@ def fragrantica_scrape(url):
 
     # Try to extract from visual note blocks
     note_sections = soup.find_all("div", class_="cell small-12")
+  # Try to extract from visual note blocks (more robust method)
     try:
-        note_block = note_sections[4]
-        note_divs = note_block.find_all("div", class_="fragrance_note")
-        current_section = "head"
-        for note_div in note_divs:
-            header = note_div.find_previous("h3")
-            if header:
-                header_text = header.text.lower()
-                if "top" in header_text:
-                    current_section = "head"
-                elif "middle" in header_text:
-                    current_section = "heart"
-                elif "base" in header_text:
-                    current_section = "base"
-            note_name = note_div.text.strip().lower()
-            notes[current_section].append(note_name)
+        note_blocks = soup.find_all("div", class_="cell small-12")
+        for block in note_blocks:
+            if block.find("h3", string=lambda s: s and ("Top notes" in s or "Middle notes" in s or "Base notes" in s)):
+                note_divs = block.find_all("div", class_="fragrance_note")
+                current_section = "head"
+                for note_div in note_divs:
+                    header = note_div.find_previous("h3")
+                    if header:
+                        header_text = header.text.lower()
+                        if "top" in header_text:
+                            current_section = "head"
+                        elif "middle" in header_text:
+                            current_section = "heart"
+                        elif "base" in header_text:
+                            current_section = "base"
+                    note_name = note_div.text.strip().lower()
+                    notes[current_section].append(note_name)
+                break  # Stop once we find the right block  
+    except Exception as e:
+        print("Couldn't locate visual notes section:", e)
+
     except IndexError:
         print("Couldn't locate visual notes section.")
 
@@ -149,5 +134,5 @@ def fragrantica_scrape(url):
             notes["base"] = split_notes(match_base.group(1))
 
     # Create and return the Fragrance object
-    return Fragrance(name=name, brand=brand, gender=gender_string, accords=accords, notes=notes, rating=rating, source="Fragrantica")
+    return Fragrance(name=name, brand=brand, accords=accords, notes=notes, rating=rating, source="Fragrantica")
 
