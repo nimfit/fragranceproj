@@ -2,6 +2,7 @@
 import fragrantica
 from fragrantica import fragrantica_scrape
 import pandas as pd
+import ast
 
 def clean_csv(input_file, output_file):
     df = pd.read_csv(input_file)
@@ -13,19 +14,44 @@ def clean_csv(input_file, output_file):
     valid_frags.to_csv(output_file, index=False)
     print(f"CSV cleaned and saved to {output_file}")
 
+def score_single_fragrance(notes, accords, user_likes):
+    user_likes = [x.lower() for x in user_likes]
+    score = 0
+
+    note_weights = {'head': 1, 'heart': 2, 'base': 3}
+
+    # Score notes
+    for note_type, weight in note_weights.items():
+        for note in notes.get(note_type, []):
+            if note.lower() in user_likes:
+                score += weight
+
+    # Score accords
+    for accord, intensity in accords:
+        if accord.lower() in user_likes:
+            score += float(intensity) * 0.05
+
+    return score
+
 
 def score_fragrances(input_file, user_likes):
     df = pd.read_csv(input_file)
     df['score'] = 0
-
+    #scores each fragrance based on the cached file
+    cache_df = load_cache()
     for index, row in df.iterrows():
-        fragrance = fragrantica_scrape(row['url'])
-        #Set the score based on user preferences
-        fragrance.set_score(user_likes)
-
-        df['score'] = df['score'].astype(float)  
-        df.at[index, 'score'] = float(fragrance.score)
-
+        fragrance_data = get_fragrance_data(row, cache_df)
+        
+        accords = ast.literal_eval(fragrance_data['accords']) if fragrance_data['accords'] else []
+        notes = ast.literal_eval(fragrance_data['notes']) if fragrance_data['notes'] else {}
+        try:
+            rating = float(fragrance_data['rating']) if fragrance_data['rating'] else 0
+        except (ValueError, TypeError):
+            rating = 0
+        score = 0
+        score = score_single_fragrance(notes, accords, user_likes)
+        df.at[index, 'score'] = score
+     
     df.to_csv(input_file, index=False)
     print(f"Scoring complete. Updated scores saved to {input_file}")
 
@@ -63,7 +89,8 @@ def get_fragrance_data(row, cache_df):
             }
             update_cache(pd.DataFrame([new_row]))
             return new_row
-        else:
+        elif fragrance is None:
+            print(f"Scrape failed for URL: {row['url']}")
             return None
 
 if __name__ == "__main__":
@@ -72,4 +99,8 @@ if __name__ == "__main__":
 
     clean_csv(input_file, output_file)
 
-
+    #Load the cache and score it to test it out
+    
+    user_likes = input("Enter your preferred fragrance notes (comma-separated): ").split(',')
+    user_likes = [note.strip().lower() for note in user_likes if note.strip()]
+    score_fragrances(output_file, user_likes)
