@@ -25,4 +25,3 @@ if __name__ == "__main__":
     This script collects fragrance data from Fragrantica, cleans it, and scores it based on user preferences.
     It then outputs the top 5 fragrances that match the user's preferences.
     """
-
