@@ -94,21 +94,20 @@ def save_data(data, filename=SAVE_FILE):
 def load_data(filename=SAVE_FILE):
     if os.path.exists(filename):
         with open(filename, 'r') as f:
-            return json.load(f)
+            return [json.loads(line) for line in f]
     return []
 
 
 
 if __name__ == "__main__":
+    # Uncomment below to export scraped data to CSV
+     with open("scraped_fragrances.json", "r") as f:
+         data = [json.loads(line) for line in f]
+     df = pd.DataFrame(data)
+     df.to_csv("fragrances.csv", index=False)
+     print("✅ Exported to 'fragrances.csv'")
 
-    with open("scraped_fragrances.json", "r") as f:
-        data = [json.loads(line) for line in f]
-
-    df = pd.DataFrame(data)
-    df.to_csv("fragrances.csv", index=False)
-    print("✅ Exported to 'fragrances.csv'")
-    """
-
+     """
     all_designers = get_designer_list()
     all_fragrances = load_data()
     scraped_urls = {f.get('url') for f in all_fragrances}
@@ -139,4 +138,5 @@ if __name__ == "__main__":
         time.sleep(random.uniform(30,60))
 
     print("All designer batches completed and saved")
+    
     """
