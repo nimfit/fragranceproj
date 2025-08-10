@@ -52,6 +52,7 @@ def extract_designerurls(designer_url):
     return list(set(urls))  # Remove duplicates
 
 def is_designer_fragrance(url, designer_name):
+    """Checks if the URL belongs to a fragrance of the specified designer."""
     return f"/perfume/{designer_name.strip()}/" in url
 
 def clean_fragrance_batch(urls, designer_name):
@@ -76,10 +77,7 @@ def batch_scrape_fragrantica(urls):
             with open(SAVE_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(frag_dict) + "\n")
 
-
             time.sleep(random.uniform(8,15))
-
-
 
         except Exception as e:
             print(f"❌ Error scraping {url}: {e}")
@@ -88,10 +86,12 @@ def batch_scrape_fragrantica(urls):
     return fragrances
 
 def save_data(data, filename=SAVE_FILE):
+    """Saves the scraped data to a JSON file."""
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2)
 
 def load_data(filename=SAVE_FILE):
+    """Loads the scraped data from a JSON file."""
     if os.path.exists(filename):
         with open(filename, 'r') as f:
             return [json.loads(line) for line in f]
@@ -100,33 +100,34 @@ def load_data(filename=SAVE_FILE):
 
 
 if __name__ == "__main__":
-    # Uncomment below to export scraped data to CSV
+     #Uncomment below to export scraped data to CSV
      with open("scraped_fragrances.json", "r") as f:
          data = [json.loads(line) for line in f]
      df = pd.DataFrame(data)
      df.to_csv("fragrances.csv", index=False)
      print("✅ Exported to 'fragrances.csv'")
+    #uncomment below to run the batch scraping process
+     '''
+     all_designers = get_designer_list()
+     all_fragrances = load_data()
+     scraped_urls = {f.get('url') for f in all_fragrances}
 
-     """
-    all_designers = get_designer_list()
-    all_fragrances = load_data()
-    scraped_urls = {f.get('url') for f in all_fragrances}
-
-
-    for i in range(0, len(all_designers), BATCH_SIZE):
+     for i in range(0, len(all_designers), BATCH_SIZE):
         batch = all_designers[i:i + BATCH_SIZE]
         print(f"📦 Processing batch {i // BATCH_SIZE + 1} of {len(all_designers) // BATCH_SIZE + 1}")
 
         for designer_name, url in batch:
             print(f"Scraping designer: {designer_name}")
             try:
-              designer_urls = extract_designerurls(url)
-              cleaned_urls = [u for u in clean_fragrance_batch(designer_urls, designer_name) if u not in scraped_urls]
-              print(f"Found {len(cleaned_urls)} fragrances for {designer_name}")
-
-              scraped_fragrances = batch_scrape_fragrantica(cleaned_urls)
-              all_fragrances.extend(scraped_fragrances)
-
+                designer_urls = extract_designerurls(url)
+                cleaned_urls = [u for u in clean_fragrance_batch(designer_urls, designer_name) if u not in scraped_urls]
+                if (cleaned_urls == []):
+                    print(f"No new fragrances found for {designer_name}, skipping...")
+                    continue
+                print(f"Found {len(cleaned_urls)} fragrances for {designer_name}")
+                scraped_fragrances = batch_scrape_fragrantica(cleaned_urls)
+                all_fragrances.extend(scraped_fragrances)
+              
             except Exception as e:
                 print(f"Error for {designer_name}: {e}")
 
@@ -137,6 +138,6 @@ if __name__ == "__main__":
         print("Batch saved. Cooling off before next batch...")
         time.sleep(random.uniform(30,60))
 
-    print("All designer batches completed and saved")
+     print("All designer batches completed and saved")
+'''
     
-    """
