@@ -3,6 +3,7 @@ import fragrantica
 from fragrantica import fragrantica_scrape
 import pandas as pd
 import ast
+import math
 
 def clean_csv(input_file, output_file):
     df = pd.read_csv(input_file)
@@ -50,10 +51,13 @@ def score_fragrances(input_file, user_likes):
             rating = 0
         score = 0
         score = score_single_fragrance(notes, accords, user_likes)
-        df.at[index, 'score'] = score
+        df['score'] = df['score'].astype(float)
+        new_score = math.trunc(score * 1000) / 1000
+        df.at[index, 'score'] = new_score
      
     df.to_csv(input_file, index=False)
     print(f"Scoring complete. Updated scores saved to {input_file}")
+
 
 def load_cache(cache_path="fragrance_cache.csv"):
     try:
@@ -98,9 +102,4 @@ if __name__ == "__main__":
     output_file = "fragrances_cache.csv"
 
     clean_csv(input_file, output_file)
-
-    #Load the cache and score it to test it out
     
-    user_likes = input("Enter your preferred fragrance notes (comma-separated): ").split(',')
-    user_likes = [note.strip().lower() for note in user_likes if note.strip()]
-    score_fragrances(output_file, user_likes)
