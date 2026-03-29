@@ -1,6 +1,4 @@
-import fragrantica_collection
 import scoring
-from fragrantica import fragrantica_scrape
 import pandas as pd
 
 def main():

@@ -25,7 +25,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     raise Exception("Missing SUPABASE_URL or SUPABASE_KEY in .env file")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-df = pd.read_csv('data/fragrances_clean.csv',encoding = 'utf-8')
+df = pd.read_csv('data/fragrances_clean.csv', encoding ='utf-8')
 df = df.where(pd.notna(df),None)
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
