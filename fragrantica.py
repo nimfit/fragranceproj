@@ -1,6 +1,10 @@
+from xmlrpc.client import boolean
 
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
+import time, random
+
 
 class Fragrance:
     def __init__(self, name, brand, accords=None, notes=None, rating=None, source='Fragrantica'):
@@ -45,8 +49,12 @@ class Fragrance:
     
 #Define the scraper function that tries to get data from fragrantica.com
 def fragrantica_scrape(url):
-    headers = {'User-Agent': 'Mozilla/5.0'} 
-    response = requests.get(url, headers=headers)
+    scraper = cloudscraper.create_scraper(
+        browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+    )
+    time.sleep(random.uniform(3, 6))
+    response = scraper.get(url, timeout=15)
+    print(f"  [HTTP] Status code: {response.status_code} for {url}")
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # Extract name
