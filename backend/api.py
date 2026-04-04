@@ -23,6 +23,7 @@ from supabase import create_client
 from dotenv import load_dotenv
 from thefuzz import process
 import os
+import re
 
 # ── Startup
 load_dotenv()
@@ -76,6 +77,14 @@ def run_similarity_search(embedding: list, limit: int):
     }).execute()
     return result.data
 
+def check_valid_input(text: str) -> bool:
+    """
+    Checks for input
+    """
+    return bool(re.search(r"[a-zA-Z]", text))
+
+
+
 # ── Routes
 @app.get("/")
 def root():
@@ -91,11 +100,19 @@ def search(req: SearchRequest):
 
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    if not check_valid_input(req.query):
+     raise HTTPException(status_code=400, detail="Query must contain letters")
+
 
     # Convert the user's text into a vector
     embedding = model.encode(req.query).tolist()
 
     results = run_similarity_search(embedding, req.limit)
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No similar colognes found")
+
     return {"results": results}
 
 
@@ -108,6 +125,10 @@ def similar(req: SimilarRequest):
 
     if not req.cologne_name.strip():
         raise HTTPException(status_code=400, detail="Cologne name cannot be empty")
+    
+    if not check_valid_input(req.cologne_name):
+        raise HTTPException(status_code=400, detail="Query must contain letters")
+
 
     name_lookup = {f"{c['brand']} {c['name']}": c['id'] for c in all_colognes}
 
@@ -126,8 +147,16 @@ def similar(req: SimilarRequest):
 
     print(f"[/similar] Found '{cologne.data['name']}' by '{cologne.data['brand']}', searching for similar...")
 
+
     embedding = cologne.data["embedding"]
     results = run_similarity_search(embedding, req.limit)
+
+    results = [
+        c for c in results
+        if c["similarity"] < 1
+    ]
+    #removes the fragrances
+   
     print(f"[/similar] Returning {len(results)} results")
     return {
         "matched": best_match,
